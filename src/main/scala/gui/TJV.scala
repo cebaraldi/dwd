@@ -36,8 +36,7 @@ object TJV extends JFXApp {
 
   stage = new JFXApp.PrimaryStage {
     onCloseRequest = () => {
-      //      println("Stage is closing")
-      println("Spark is closing")
+      println("Closing Spark, then Stage")
       spark.stop()
     }
     resizable = false
