@@ -1,12 +1,12 @@
 name := "dwd"
 
-version := "0.1"
+version := "1.0"
 
 scalaVersion := "2.12.13"
 
 scalacOptions ++= Seq(
   "-deprecation",
-  "-encoding", "UTF-8",
+  "-encoding", "ISO-8859-1", // UTF-8
   "-feature",
   "-unchecked"
 )
