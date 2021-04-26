@@ -1,4 +1,4 @@
-package scalafx
+package gui
 
 import scalafx.application.JFXApp
 import scalafx.scene.Scene

@@ -1,4 +1,4 @@
-package scalafx
+package gui
 
 import javafx.event.EventHandler
 import scalafx.Includes._

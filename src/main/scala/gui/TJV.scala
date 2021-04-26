@@ -1,4 +1,4 @@
-package scalafx
+package gui
 
 import dwd.DWDStation
 

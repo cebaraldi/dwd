@@ -1,4 +1,4 @@
-package scalafx
+package gui
 
 import scalafx.Includes._
 import scalafx.application.JFXApp
