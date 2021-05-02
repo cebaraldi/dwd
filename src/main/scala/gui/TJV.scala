@@ -18,7 +18,9 @@ import java.text.SimpleDateFormat
 object TJV extends JFXApp {
 
   val spark = SparkSession.builder().
-    master("local[*]").
+    master("local[*]"). // local[*] or spark://xenos:7077
+//    config("driver-memory", "2G").
+//    config("executor-memory", "3G").
     appName("TJV").
     getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
@@ -26,7 +28,7 @@ object TJV extends JFXApp {
   val dwdPath = "/media/datalake"
   val wsPqf = dwdPath + "/" + "DWDStation.parquet"
   val obsPqf = dwdPath + "/" + "DWDHistoricalData.parquet"
-  val df = spark.read.parquet(wsPqf)
+  val df = spark.read.parquet(wsPqf).cache()
 
   import spark.implicits._
 
@@ -44,7 +46,7 @@ object TJV extends JFXApp {
     scene = new Scene(835, 800) {
       val table = new TableView(data) {
         editable = false
-        selectionModel().selectionMode = Single //Choose between Single and Multiple
+        selectionModel().selectionMode = Single // Single or Multiple
         selectionModel.apply.selectedItem.onChange {
           computeBasicStatistics(selectionModel.apply.getSelectedItem)
         }
@@ -97,7 +99,7 @@ object TJV extends JFXApp {
 
   def computeBasicStatistics(dwd: DWDStation): Unit = {
     println(s"Compute Basic Statistics of Weather Station ${dwd.sid}: ${dwd.wsname}")
-    val data = spark.read.parquet(obsPqf).filter('sid === dwd.sid)
+    val data = spark.read.parquet(obsPqf).filter('sid === dwd.sid).cache()
     val bsWeatherStation = data.agg(
       avg('tmk) as "tavg",
       variance('tmk) as "tvar",

@@ -2,7 +2,6 @@ package dwd
 
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
-
 import java.text.SimpleDateFormat
 
 case class DWDStation(
@@ -25,6 +24,7 @@ object Station extends App {
     d
   }
 
+  // Start spark
   val spark = SparkSession.builder().
     master("local[*]").
     appName("DWD Station").
@@ -33,14 +33,21 @@ object Station extends App {
 
   import spark.implicits._
 
-  val filePath = "/media/datalake/dwd/historical"
-  val fileName = "KL_Tageswerte_Beschreibung_Stationen.txt"
-  val lines = spark.read.textFile(filePath + "/" + fileName).
+  // Load JSON configuration from resources directory
+  val cfgJSON = "src/main/resources/cfgXenos_dwd.json"
+  val cfg = spark.read.option("multiLine", true)
+    .json(cfgJSON).toDF().filter('object === "Station")
+  val inPath = cfg.select('inPath).as[String].collect()(0)
+  val klStationFile = cfg.select('KL_StationFile).as[String].collect()(0)
+  val outPath = cfg.select('outPath).as[String].collect()(0)
+  val pqFile = cfg.select('pqFile).as[String].collect()(0)
+
+  val lines = spark.read.textFile(inPath + klStationFile).
     filter(!_.contains("Stations_id")).
     filter(!_.contains("-----------"))
 
   val rdd = lines.map(line => {
-    //    val e = line.split("\\s+") // split a string on whitespace characters
+    //    val e = line.split("\\s+") // split a string on whitespace characters, didn't do it ...
     DWDStation(
       line.substring(0, 5).toInt,
       toDate(line.substring(6, 14), "yyyyMMdd"),
@@ -54,11 +61,11 @@ object Station extends App {
 
   // Write a parquet file
   val df = rdd.toDF
-//  import org.apache.spark.sql.functions._ <---- German Umlaute not read in.
-//    'withColumn("stn",encode('wsname,"ISO-8859-1")). or decode ...
-//    withColumn("sta",encode('state,"ISO-8859-1"))
-  val pqfName = "DWDStation.parquet"
-  df.write.mode(SaveMode.Overwrite).parquet(pqfName)
+  //  import org.apache.spark.sql.functions._ <---- German Umlaute not read in.
+  //    'withColumn("stn",encode('wsname,"ISO-8859-1")). or decode ...
+  //    withColumn("sta",encode('state,"ISO-8859-1"))
+  //  val pqfName = "DWDStation.parquet"
+  df.write.mode(SaveMode.Overwrite).parquet(outPath + pqFile)
   df.show(false)
 
   spark.stop()

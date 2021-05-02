@@ -8,7 +8,8 @@ import java.util.zip.ZipInputStream
 import scala.swing.FileChooser
 
 case class DWDData(
-                    sid: Int, mess_datum: java.sql.Date,
+                    sid: Int,
+                    date: java.sql.Date,
                     qn_3: Option[Int], fx: Option[Double], fm: Option[Double],
                     qn_4: Option[Int], rsk: Option[Double], rskf: Option[Double], sdk: Option[Double],
                     shk_tag: Option[Double], nm: Option[Double], vpm: Option[Double], pm: Option[Double],
@@ -79,6 +80,15 @@ object Data extends App {
     getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
 
+  import spark.implicits._
+
+  // Load JSON configuration from resources directory
+  val cfgJSON = "src/main/resources/cfgXenos_dwd.json"
+  val cfg = spark.read.option("multiLine", true)
+    .json(cfgJSON).toDF().filter('object === "Data")
+  val outPath = cfg.select('outPath).as[String].collect()(0)
+  val pqFile = cfg.select('pqFile).as[String].collect()(0)
+
   // File select GUI
   val chooser = new FileChooser
   chooser.multiSelectionEnabled = true
@@ -87,21 +97,23 @@ object Data extends App {
     val n = chooser.selectedFiles.size
     println(s"$n files selected")
 
+    val opqFile = outPath + pqFile
     spark.time {
       // Extract data file like "produkt_klima_tag_" from zip file to variable temporary file dwd
       val dwd = "src/main/resources/foobar"
       zipExtractData(chooser.selectedFiles(0).getAbsolutePath, dwd)
       val dwdDS = rdd2Dataset(dwd)
-      dwdDS.write.mode(SaveMode.Overwrite).parquet("DWDData.parquet")
+      dwdDS.write.mode(SaveMode.Overwrite).parquet(opqFile)
 
       if (n > 1) {
         for (i <- 1 until n) {
           zipExtractData(chooser.selectedFiles(i).getAbsolutePath, dwd)
           val dwdDS = rdd2Dataset(dwd)
-          dwdDS.write.mode(SaveMode.Append).parquet("DWDData.parquet")
+          dwdDS.write.mode(SaveMode.Append).parquet(opqFile)
         } // for
       } // if
     } // spark timer
   } // if chooser
+
   spark.stop()
 }

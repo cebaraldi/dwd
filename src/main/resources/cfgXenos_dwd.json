@@ -1,0 +1,13 @@
+[{
+    "object": "Data",
+    "outPath": "",
+    "pqFile": "DWDData.parquet"
+},
+{
+    "object": "Station",
+    "directorySeparator": "/",
+    "inPath": "/media/datalake/dwd/",
+    "KL_StationFile": "historical/KL_Tageswerte_Beschreibung_Stationen.txt",
+    "outPath": "/media/datalake/",
+    "pqFile": "DWDStation.parquet"
+}]
