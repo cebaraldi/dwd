@@ -1,13 +1,16 @@
 package dwd
 
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.functions.trim
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 import java.text.SimpleDateFormat
+import java.sql.Date
 
 case class DWDStation(
                        sid: Int,
-                       von: java.sql.Date,
-                       bis: java.sql.Date,
+                       von: Date,
+                       bis: Date,
                        height: Int,
                        lat: Double,
                        lon: Double,
@@ -16,6 +19,7 @@ case class DWDStation(
                      )
 
 object Station extends App {
+  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
 
   def toDate(s: String, sformat: String): java.sql.Date = {
     val dateFormat = new SimpleDateFormat(sformat)
@@ -36,7 +40,7 @@ object Station extends App {
   // Load JSON configuration from resources directory
   val cfgJSON = "src/main/resources/cfgXenos_dwd.json"
   val cfg = spark.read.option("multiLine", true)
-    .json(cfgJSON).toDF().filter('object === "Station")
+    .json(cfgJSON).toDF().filter(trim('object) === "Station")
   val inPath = cfg.select('inPath).as[String].collect()(0)
   val klStationFile = cfg.select('KL_StationFile).as[String].collect()(0)
   val outPath = cfg.select('outPath).as[String].collect()(0)
@@ -57,7 +61,7 @@ object Station extends App {
       line.substring(51, 60).trim.toDouble,
       line.substring(61, 101).trim,
       line.substring(102, 200).trim)
-  })
+  }).cache()
 
   // Write a parquet file
   val df = rdd.toDF
@@ -67,6 +71,8 @@ object Station extends App {
   //  val pqfName = "DWDStation.parquet"
   df.write.mode(SaveMode.Overwrite).parquet(outPath + pqFile)
   df.show(false)
+  println(f"${df.count}%,d records written to ${outPath + pqFile}")
 
+  spark.catalog.clearCache()
   spark.stop()
 }

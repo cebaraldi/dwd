@@ -1,13 +1,21 @@
-[{
+[
+  {
     "object": "Data",
     "outPath": "",
     "pqFile": "DWDData.parquet"
-},
-{
+  },
+  {
     "object": "Station",
     "directorySeparator": "/",
     "inPath": "/media/datalake/dwd/",
     "KL_StationFile": "historical/KL_Tageswerte_Beschreibung_Stationen.txt",
-    "outPath": "/media/datalake/",
+    "outPath": "",
     "pqFile": "DWDStation.parquet"
-}]
+  },
+  {
+    "object": "SvdClimatic_Season_x_WS",
+    "inPath": "/media/datalake/",
+    "inFile": "DWDHistoricalData.parquet",
+    "wsStation": [1420, 7341, 917]
+  }
+]

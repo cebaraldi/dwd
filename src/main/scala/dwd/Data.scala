@@ -1,7 +1,11 @@
 package dwd
 
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.functions.trim
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.io.{FileInputStream, FileOutputStream}
 import java.text.SimpleDateFormat
 import java.util.zip.ZipInputStream
@@ -18,6 +22,8 @@ case class DWDData(
                   )
 
 object Data extends App {
+  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+  val  dtFormat =  DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
 
   def toDate(s: String, sformat: String): java.sql.Date = {
     val dateFormat = new SimpleDateFormat(sformat)
@@ -73,7 +79,7 @@ object Data extends App {
     ds
   }
 
-  // Start of Main
+  // Start spark
   val spark = SparkSession.builder().
     master("local[*]").
     appName("DWD Data").
@@ -85,7 +91,7 @@ object Data extends App {
   // Load JSON configuration from resources directory
   val cfgJSON = "src/main/resources/cfgXenos_dwd.json"
   val cfg = spark.read.option("multiLine", true)
-    .json(cfgJSON).toDF().filter('object === "Data")
+    .json(cfgJSON).toDF().filter(trim('object) === "Data")
   val outPath = cfg.select('outPath).as[String].collect()(0)
   val pqFile = cfg.select('pqFile).as[String].collect()(0)
 
@@ -95,7 +101,7 @@ object Data extends App {
   chooser.title = "Select DWD files"
   if (chooser.showOpenDialog(null) == FileChooser.Result.Approve) {
     val n = chooser.selectedFiles.size
-    println(s"$n files selected")
+    println(s"${LocalDateTime.now().format(dtFormat)} INFO: $n Files selected")
 
     val opqFile = outPath + pqFile
     spark.time {
@@ -112,8 +118,8 @@ object Data extends App {
           dwdDS.write.mode(SaveMode.Append).parquet(opqFile)
         } // for
       } // if
+      spark.stop()
     } // spark timer
   } // if chooser
 
-  spark.stop()
 }

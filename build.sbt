@@ -6,7 +6,7 @@ scalaVersion := "2.12.13"
 
 scalacOptions ++= Seq(
   "-deprecation",
-  "-encoding", "ISO-8859-1", // UTF-8
+  "-encoding", "UTF-8", // UTF-8, ISO-8859-1
   "-feature",
   "-unchecked"
 )
