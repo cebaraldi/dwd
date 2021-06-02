@@ -1,8 +1,8 @@
-name := "dwd"
+name := "DWD"
 
 version := "1.0"
 
-scalaVersion := "2.12.13"
+scalaVersion := "2.12.14"
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -11,7 +11,7 @@ scalacOptions ++= Seq(
   "-unchecked"
 )
 
-val sparkVersion = "3.1.1"
+val sparkVersion = "3.1.2"
 
 libraryDependencies ++= Seq(
   "org.scalafx" %% "scalafx" % "16.0.0-R22",

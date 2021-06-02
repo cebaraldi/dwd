@@ -23,12 +23,12 @@ case class DWDData(
 
 object Data extends App {
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
-  val  dtFormat =  DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+  val dtFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
 
   def toDate(s: String, sformat: String): java.sql.Date = {
     val dateFormat = new SimpleDateFormat(sformat)
     val date: java.util.Date = dateFormat.parse(s)
-    val d: java.sql.Date = new java.sql.Date(date.getTime())
+    val d: java.sql.Date = new java.sql.Date(date.getTime)
     d
   }
 
@@ -59,8 +59,8 @@ object Data extends App {
         Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
       }
     }
-    zis.close
-    fis.close
+    zis.close()
+    fis.close()
   }
 
   def rdd2Dataset(dwd: String): Dataset[DWDData] = {
@@ -80,17 +80,17 @@ object Data extends App {
   }
 
   // Start spark
-  val spark = SparkSession.builder().
-    master("local[*]").
-    appName("DWD Data").
-    getOrCreate()
+  val spark = SparkSession.builder()
+    .master("local[*]")
+    .appName("DWD Data")
+    .getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
 
   import spark.implicits._
 
   // Load JSON configuration from resources directory
   val cfgJSON = "src/main/resources/cfgXenos_dwd.json"
-  val cfg = spark.read.option("multiLine", true)
+  val cfg = spark.read.option("multiLine", value = true)
     .json(cfgJSON).toDF().filter(trim('object) === "Data")
   val outPath = cfg.select('outPath).as[String].collect()(0)
   val pqFile = cfg.select('pqFile).as[String].collect()(0)
@@ -104,22 +104,23 @@ object Data extends App {
     println(s"${LocalDateTime.now().format(dtFormat)} INFO: $n Files selected")
 
     val opqFile = outPath + pqFile
-    spark.time {
-      // Extract data file like "produkt_klima_tag_" from zip file to variable temporary file dwd
-      val dwd = "src/main/resources/foobar"
-      zipExtractData(chooser.selectedFiles(0).getAbsolutePath, dwd)
-      val dwdDS = rdd2Dataset(dwd)
-      dwdDS.write.mode(SaveMode.Overwrite).parquet(opqFile)
+    val start = System.nanoTime()
 
-      if (n > 1) {
-        for (i <- 1 until n) {
-          zipExtractData(chooser.selectedFiles(i).getAbsolutePath, dwd)
-          val dwdDS = rdd2Dataset(dwd)
-          dwdDS.write.mode(SaveMode.Append).parquet(opqFile)
-        } // for
-      } // if
-      spark.stop()
-    } // spark timer
+    // Extract data file like "produkt_klima_tag_" from zip file to variable temporary file dwd
+    val dwd = "src/main/resources/foobar"
+    zipExtractData(chooser.selectedFiles.head.getAbsolutePath, dwd)
+    val dwdDS = rdd2Dataset(dwd)
+    dwdDS.write.mode(SaveMode.Overwrite).parquet(opqFile)
+
+    if (n > 1) {
+      for (i <- 1 until n) {
+        zipExtractData(chooser.selectedFiles(i).getAbsolutePath, dwd)
+        val dwdDS = rdd2Dataset(dwd)
+        dwdDS.write.mode(SaveMode.Append).parquet(opqFile)
+      } // for
+    } // if
+
+    println(f"Elapsed time: ${(System.nanoTime() - start) * 1e-9}%,.1fs")
+    spark.stop()
   } // if chooser
-
 }

@@ -29,12 +29,11 @@ object Station extends App {
   }
 
   // Start spark
-  val spark = SparkSession.builder().
-    master("local[*]").
-    appName("DWD Station").
-    getOrCreate()
+  val spark = SparkSession.builder()
+    .master("local[*]")
+    .appName("DWD Station")
+    .getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
-
   import spark.implicits._
 
   // Load JSON configuration from resources directory
@@ -46,9 +45,9 @@ object Station extends App {
   val outPath = cfg.select('outPath).as[String].collect()(0)
   val pqFile = cfg.select('pqFile).as[String].collect()(0)
 
-  val lines = spark.read.textFile(inPath + klStationFile).
-    filter(!_.contains("Stations_id")).
-    filter(!_.contains("-----------"))
+  val lines = spark.read.textFile(inPath + klStationFile)
+    .filter(!_.contains("Stations_id"))
+    .filter(!_.contains("-----------"))
 
   val rdd = lines.map(line => {
     //    val e = line.split("\\s+") // split a string on whitespace characters, didn't do it ...
